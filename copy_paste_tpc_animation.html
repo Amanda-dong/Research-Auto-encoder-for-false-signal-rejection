@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TPC Signal Formation Animation</title>
+  <style>
+    :root {
+      --ink: #15202b;
+      --muted: #52616f;
+      --panel: #f7f9fb;
+      --line: #d5dee7;
+      --gas: #e9f7f1;
+      --gas-dark: #74b99f;
+      --blue: #2563eb;
+      --red: #dc2626;
+      --gold: #eab308;
+      --green: #16a34a;
+      --violet: #7c3aed;
+      --orange: #ea580c;
+      --pad: #536f8c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #ffffff;
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    main {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+    }
+
+    .stage {
+      position: relative;
+      padding: 18px;
+      min-height: 760px;
+      background:
+        linear-gradient(90deg, rgba(21, 32, 43, .04) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(21, 32, 43, .04) 1px, transparent 1px),
+        #fff;
+      background-size: 42px 42px;
+      border-right: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .side {
+      padding: 22px;
+      background: var(--panel);
+      border-left: 1px solid #edf1f5;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 27px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 8px;
+      margin: 14px 0 18px;
+    }
+
+    button {
+      height: 36px;
+      border: 1px solid #b8c7d5;
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 700;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    .step-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 9px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid #d9e1e8;
+      border-radius: 8px;
+      background: #fff;
+      transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+    }
+
+    .step.active {
+      border-color: var(--blue);
+      box-shadow: 0 8px 22px rgba(37, 99, 235, .14);
+      transform: translateX(-2px);
+    }
+
+    .num {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #6b7a89;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .step.active .num { background: var(--blue); }
+
+    .step strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 14px;
+    }
+
+    .step span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .note {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid #d9e1e8;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    svg {
+      width: 100%;
+      height: min(84vh, 820px);
+      min-height: 700px;
+      display: block;
+    }
+
+    .label {
+      font: 700 17px Arial, Helvetica, sans-serif;
+      fill: var(--ink);
+    }
+
+    .small {
+      font: 13px Arial, Helvetica, sans-serif;
+      fill: var(--muted);
+    }
+
+    .tiny {
+      font: 11px Arial, Helvetica, sans-serif;
+      fill: var(--muted);
+    }
+
+    .beam {
+      stroke: #334155;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-dasharray: 14 12;
+    }
+
+    .beam.left { animation: incoming-left 14s ease-in-out infinite; }
+    .beam.right { animation: incoming-right 14s ease-in-out infinite; }
+
+    @keyframes incoming-left {
+      0%, 5% { transform: translateX(-210px); opacity: 1; }
+      16%, 100% { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes incoming-right {
+      0%, 5% { transform: translateX(210px); opacity: 1; }
+      16%, 100% { transform: translateX(0); opacity: 1; }
+    }
+
+    .particle-dot.left { animation: particle-left 14s ease-in-out infinite; }
+    .particle-dot.right { animation: particle-right 14s ease-in-out infinite; }
+
+    @keyframes particle-left {
+      0%, 5% { transform: translateX(-210px); }
+      16%, 100% { transform: translateX(0); }
+    }
+
+    @keyframes particle-right {
+      0%, 5% { transform: translateX(210px); }
+      16%, 100% { transform: translateX(0); }
+    }
+
+    .burst {
+      transform-origin: 438px 255px;
+      animation: burst 14s ease-in-out infinite;
+    }
+
+    @keyframes burst {
+      0%, 15% { opacity: 0; transform: scale(.25); }
+      18%, 26% { opacity: 1; transform: scale(1); }
+      36%, 100% { opacity: .45; transform: scale(1.2); }
+    }
+
+    .track {
+      stroke-width: 6;
+      stroke-linecap: round;
+      fill: none;
+      stroke-dasharray: 720;
+      stroke-dashoffset: 720;
+    }
+
+    .track.a { stroke: var(--red); animation: draw-track-a 14s ease-in-out infinite; }
+    .track.b { stroke: var(--green); animation: draw-track-b 14s ease-in-out infinite; }
+    .track.c { stroke: var(--violet); animation: draw-track-c 14s ease-in-out infinite; }
+
+    @keyframes draw-track-a {
+      0%, 20% { stroke-dashoffset: 720; opacity: 0; }
+      34%, 100% { stroke-dashoffset: 0; opacity: 1; }
+    }
+
+    @keyframes draw-track-b {
+      0%, 22% { stroke-dashoffset: 720; opacity: 0; }
+      36%, 100% { stroke-dashoffset: 0; opacity: 1; }
+    }
+
+    @keyframes draw-track-c {
+      0%, 24% { stroke-dashoffset: 720; opacity: 0; }
+      38%, 100% { stroke-dashoffset: 0; opacity: 1; }
+    }
+
+    .ion-mark {
+      opacity: 0;
+      animation: ion-mark 14s ease-in-out infinite;
+    }
+
+    @keyframes ion-mark {
+      0%, 32% { opacity: 0; transform: scale(.5); }
+      42%, 68% { opacity: 1; transform: scale(1); }
+      82%, 100% { opacity: .25; transform: scale(.85); }
+    }
+
+    .electron-drift {
+      opacity: 0;
+      animation: electron-drift 14s ease-in-out infinite;
+    }
+
+    .electron-drift.d2 { animation-delay: .15s; }
+    .electron-drift.d3 { animation-delay: .3s; }
+    .electron-drift.d4 { animation-delay: .45s; }
+
+    @keyframes electron-drift {
+      0%, 45% { opacity: 0; transform: translateX(0); }
+      52% { opacity: 1; }
+      72%, 100% { opacity: .92; transform: translateX(255px); }
+    }
+
+    .zoom-gas {
+      opacity: 0;
+      animation: show-gas 14s ease-in-out infinite;
+    }
+
+    @keyframes show-gas {
+      0%, 34% { opacity: 0; transform: translateY(18px); }
+      42%, 76% { opacity: 1; transform: translateY(0); }
+      86%, 100% { opacity: .28; transform: translateY(0); }
+    }
+
+    .freed-electron {
+      opacity: 0;
+      animation: freed-electron 14s ease-in-out infinite;
+    }
+
+    .freed-electron.e2 { animation-delay: .25s; }
+    .freed-electron.e3 { animation-delay: .45s; }
+
+    @keyframes freed-electron {
+      0%, 43% { opacity: 0; transform: translate(0,0); }
+      51% { opacity: 1; transform: translate(20px,-18px); }
+      70%, 100% { opacity: .95; transform: translate(58px,-42px); }
+    }
+
+    .zoom-endplate {
+      opacity: 0;
+      animation: show-endplate 14s ease-in-out infinite;
+    }
+
+    @keyframes show-endplate {
+      0%, 58% { opacity: 0; transform: translateY(18px); }
+      68%, 100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .pad-hit {
+      animation: pad-hit 14s ease-in-out infinite;
+    }
+
+    @keyframes pad-hit {
+      0%, 66% { fill: #dce7f1; }
+      72%, 86% { fill: #facc15; }
+      100% { fill: #dce7f1; }
+    }
+
+    .adc-wave {
+      stroke-dasharray: 520;
+      stroke-dashoffset: 520;
+      animation: adc-wave 14s ease-in-out infinite;
+    }
+
+    @keyframes adc-wave {
+      0%, 68% { opacity: 0; stroke-dashoffset: 520; }
+      78%, 100% { opacity: 1; stroke-dashoffset: 0; }
+    }
+
+    .camera-line {
+      opacity: 0;
+      animation: camera-line 14s ease-in-out infinite;
+    }
+
+    .camera-line.end { animation-delay: 3.3s; }
+
+    @keyframes camera-line {
+      0%, 35% { opacity: 0; }
+      43%, 74% { opacity: .75; }
+      82%, 100% { opacity: 0; }
+    }
+
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+      .stage {
+        min-height: 700px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 10px;
+      }
+      .side { padding: 18px 16px 24px; }
+      svg { height: 700px; min-height: 650px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="stage" aria-label="Animated TPC signal formation">
+      <svg viewBox="0 0 1040 760" role="img" aria-labelledby="title desc">
+        <title id="title">TPC signal formation from collision to ADC data</title>
+        <desc id="desc">A cylinder-shaped TPC with two incoming particles colliding, outgoing charged tracks, gas ionization, electron drift to the endplate, and ADC readout.</desc>
+
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#34495e"/>
+          </marker>
+          <radialGradient id="burstGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fff7ed"/>
+            <stop offset="42%" stop-color="#f97316"/>
+            <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="cylinderGas" x1="0%" x2="100%">
+            <stop offset="0%" stop-color="#e9f7f1"/>
+            <stop offset="50%" stop-color="#f6fffb"/>
+            <stop offset="100%" stop-color="#dff3eb"/>
+          </linearGradient>
+        </defs>
+
+        <text x="30" y="38" class="label">1. Full TPC cylinder: collision, tracks, drift, and endplate readout</text>
+
+        <!-- Cylinder body -->
+        <g id="cylinder">
+          <path d="M160 130 C190 78, 690 78, 720 130 L720 380 C690 432, 190 432, 160 380 Z" fill="url(#cylinderGas)" stroke="var(--gas-dark)" stroke-width="3"/>
+          <ellipse cx="160" cy="255" rx="52" ry="125" fill="#e2f3ed" stroke="var(--gas-dark)" stroke-width="3"/>
+          <ellipse cx="720" cy="255" rx="52" ry="125" fill="#d8ecf8" stroke="#6b8aa8" stroke-width="4"/>
+          <path d="M160 130 C190 182, 690 182, 720 130" fill="none" stroke="#b6d8cc" stroke-width="2"/>
+          <path d="M160 380 C190 328, 690 328, 720 380" fill="none" stroke="#b6d8cc" stroke-width="2"/>
+          <line x1="160" y1="130" x2="720" y2="130" stroke="#9acbbc" stroke-width="2"/>
+          <line x1="160" y1="380" x2="720" y2="380" stroke="#9acbbc" stroke-width="2"/>
+          <text x="122" y="95" class="small">gas volume</text>
+          <text x="676" y="95" class="small">endplate / readout pads</text>
+        </g>
+
+        <!-- incoming particles -->
+        <g>
+          <line x1="90" y1="255" x2="428" y2="255" class="beam left"/>
+          <line x1="790" y1="255" x2="448" y2="255" class="beam right"/>
+          <circle cx="95" cy="255" r="11" fill="var(--blue)" class="particle-dot left"/>
+          <circle cx="785" cy="255" r="11" fill="var(--red)" class="particle-dot right"/>
+          <text x="78" y="226" class="small">incoming particle</text>
+          <text x="733" y="226" class="small">incoming particle</text>
+        </g>
+
+        <!-- collision and outgoing tracks -->
+        <circle cx="438" cy="255" r="58" fill="url(#burstGrad)" class="burst"/>
+        <circle cx="438" cy="255" r="8" fill="#111827"/>
+        <text x="392" y="228" class="small">collision point</text>
+        <path d="M438 255 C370 205, 294 188, 210 152" class="track a"/>
+        <path d="M438 255 C506 210, 586 190, 668 158" class="track b"/>
+        <path d="M438 255 C384 313, 315 340, 215 360" class="track c"/>
+        <text x="214" y="142" class="small">red/green/purple lines = charged particle tracks</text>
+
+        <!-- ionization dots and drift in main cylinder -->
+        <g fill="var(--gold)" stroke="#a16207" stroke-width="1.2">
+          <circle cx="356" cy="202" r="5" class="ion-mark"/>
+          <circle cx="305" cy="187" r="5" class="ion-mark"/>
+          <circle cx="512" cy="209" r="5" class="ion-mark"/>
+          <circle cx="585" cy="188" r="5" class="ion-mark"/>
+          <circle cx="363" cy="319" r="5" class="ion-mark"/>
+          <circle cx="292" cy="346" r="5" class="ion-mark"/>
+        </g>
+        <g fill="var(--gold)" stroke="#a16207" stroke-width="1.2">
+          <circle cx="356" cy="202" r="4" class="electron-drift d1"/>
+          <circle cx="305" cy="187" r="4" class="electron-drift d2"/>
+          <circle cx="512" cy="209" r="4" class="electron-drift d3"/>
+          <circle cx="363" cy="319" r="4" class="electron-drift d4"/>
+          <circle cx="292" cy="346" r="4" class="electron-drift d2"/>
+        </g>
+        <g stroke="#8aa4b5" stroke-width="1.4" opacity=".7">
+          <line x1="190" y1="172" x2="700" y2="172"/>
+          <line x1="190" y1="222" x2="700" y2="222"/>
+          <line x1="190" y1="272" x2="700" y2="272"/>
+          <line x1="190" y1="322" x2="700" y2="322"/>
+          <line x1="190" y1="372" x2="700" y2="372"/>
+        </g>
+        <text x="524" y="415" class="small">freed electrons drift through the electric field toward the endplate</text>
+
+        <!-- camera/zoom connectors -->
+        <path d="M350 196 C280 438, 210 446, 140 468" fill="none" stroke="var(--blue)" stroke-width="2" stroke-dasharray="6 6" class="camera-line"/>
+        <path d="M708 255 C776 428, 780 440, 798 466" fill="none" stroke="var(--blue)" stroke-width="2" stroke-dasharray="6 6" class="camera-line end"/>
+
+        <!-- gas close-up -->
+        <g class="zoom-gas">
+          <rect x="36" y="468" width="420" height="250" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/>
+          <text x="58" y="500" class="label">2. Zoom: one small gas volume</text>
+          <rect x="70" y="526" width="350" height="156" rx="18" fill="#ecfdf5" stroke="#9acbbc" stroke-width="2"/>
+          <path d="M94 650 C165 608, 236 590, 386 558" fill="none" stroke="var(--red)" stroke-width="6" stroke-linecap="round"/>
+          <g fill="#94a3b8" opacity=".65">
+            <circle cx="105" cy="552" r="6"/><circle cx="148" cy="622" r="6"/><circle cx="198" cy="555" r="6"/>
+            <circle cx="266" cy="646" r="6"/><circle cx="326" cy="562" r="6"/><circle cx="380" cy="632" r="6"/>
+          </g>
+          <g fill="none" stroke="#64748b" stroke-width="1.5">
+            <circle cx="210" cy="604" r="17"/>
+            <circle cx="292" cy="584" r="17"/>
+            <circle cx="342" cy="573" r="17"/>
+          </g>
+          <g fill="var(--gold)" stroke="#a16207" stroke-width="1.2">
+            <circle cx="210" cy="604" r="6" class="freed-electron e1"/>
+            <circle cx="292" cy="584" r="6" class="freed-electron e2"/>
+            <circle cx="342" cy="573" r="6" class="freed-electron e3"/>
+          </g>
+          <text x="82" y="704" class="small">charged track ionizes gas atoms; freed electrons carry the signal</text>
+        </g>
+
+        <!-- endplate/readout close-up -->
+        <g class="zoom-endplate">
+          <rect x="500" y="468" width="500" height="250" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/>
+          <text x="522" y="500" class="label">3. Zoom: endplate records charge</text>
+          <rect x="530" y="530" width="150" height="150" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+          <g stroke="#fff" stroke-width="2">
+            <rect x="550" y="550" width="28" height="28" rx="4" fill="#dce7f1"/>
+            <rect x="584" y="550" width="28" height="28" rx="4" fill="#dce7f1"/>
+            <rect x="618" y="550" width="28" height="28" rx="4" fill="#dce7f1"/>
+            <rect x="550" y="584" width="28" height="28" rx="4" fill="#dce7f1"/>
+            <rect x="584" y="584" width="28" height="28" rx="4" class="pad-hit"/>
+            <rect x="618" y="584" width="28" height="28" rx="4" class="pad-hit" style="animation-delay:.18s"/>
+            <rect x="550" y="618" width="28" height="28" rx="4" fill="#dce7f1"/>
+            <rect x="584" y="618" width="28" height="28" rx="4" class="pad-hit" style="animation-delay:.3s"/>
+            <rect x="618" y="618" width="28" height="28" rx="4" fill="#dce7f1"/>
+          </g>
+          <text x="536" y="704" class="small">pads light up where charge arrives</text>
+
+          <line x1="700" y1="604" x2="746" y2="604" stroke="#34495e" stroke-width="3" marker-end="url(#arrow)"/>
+          <rect x="766" y="532" width="196" height="148" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+          <line x1="800" y1="650" x2="934" y2="650" stroke="#667789" stroke-width="2"/>
+          <line x1="800" y1="650" x2="800" y2="552" stroke="#667789" stroke-width="2"/>
+          <path d="M800 646 L818 646 L828 628 L840 575 L854 552 L868 588 L884 632 L910 646 L934 646" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linejoin="round" class="adc-wave"/>
+          <text x="827" y="700" class="small">time bins</text>
+          <text x="768" y="546" class="tiny">ADC</text>
+          <text x="794" y="514" class="small">electronics waveform</text>
+        </g>
+      </svg>
+    </section>
+
+    <aside class="side">
+      <h1>TPC Signal Formation</h1>
+      <p class="lede">This follows the detector story in order: two incoming particles collide, charged particles fly through the cylindrical gas volume, electrons are freed, and the endplate records ADC over time.</p>
+      <div class="control-row">
+        <button class="primary" id="playPause" type="button">Pause</button>
+        <button id="restart" type="button">Restart</button>
+      </div>
+
+      <div class="step-list">
+        <div class="step active"><div class="num">1</div><div><strong>Two incoming particles</strong><span>The blue and red dots move toward the center of the TPC cylinder.</span></div></div>
+        <div class="step"><div class="num">2</div><div><strong>Collision</strong><span>They collide near the center and create new particles.</span></div></div>
+        <div class="step"><div class="num">3</div><div><strong>Charged tracks</strong><span>The red, green, and purple curves are charged particles flying through the gas.</span></div></div>
+        <div class="step"><div class="num">4</div><div><strong>Ionization</strong><span>A close-up shows gas atoms and electrons knocked free near a track.</span></div></div>
+        <div class="step"><div class="num">5</div><div><strong>Drift to endplate</strong><span>Freed electrons drift along the electric field toward the readout side.</span></div></div>
+        <div class="step"><div class="num">6</div><div><strong>Recorded as ADC</strong><span>Pads receive charge, and electronics store ADC values across time bins.</span></div></div>
+      </div>
+
+      <div class="note">
+        <strong>About the colored lines:</strong> they are not detector wires. They represent outgoing charged particle paths after the collision.
+      </div>
+      <div class="note">
+        <strong>About time:</strong> `tbin` is readout arrival time. Electrons created farther from the endplate arrive later.
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const animated = [...document.querySelectorAll(".stage *")].filter((node) => {
+      return getComputedStyle(node).animationName !== "none";
+    });
+    const playButton = document.getElementById("playPause");
+    const restartButton = document.getElementById("restart");
+    const steps = [...document.querySelectorAll(".step")];
+    let paused = false;
+    let startedAt = Date.now();
+    let pauseAt = 0;
+
+    function activeIndex(elapsed) {
+      const pct = (elapsed % 14000) / 14000;
+      if (pct > .72) return 5;
+      if (pct > .55) return 4;
+      if (pct > .40) return 3;
+      if (pct > .24) return 2;
+      if (pct > .16) return 1;
+      return 0;
+    }
+
+    function updateSteps() {
+      const elapsed = paused ? pauseAt : Date.now() - startedAt;
+      const index = activeIndex(elapsed);
+      steps.forEach((step, i) => step.classList.toggle("active", i === index));
+      requestAnimationFrame(updateSteps);
+    }
+
+    playButton.addEventListener("click", () => {
+      paused = !paused;
+      animated.forEach((node) => {
+        node.style.animationPlayState = paused ? "paused" : "running";
+      });
+      if (paused) {
+        pauseAt = Date.now() - startedAt;
+        playButton.textContent = "Play";
+      } else {
+        startedAt = Date.now() - pauseAt;
+        playButton.textContent = "Pause";
+      }
+    });
+
+    restartButton.addEventListener("click", () => {
+      const stage = document.querySelector(".stage");
+      stage.style.display = "none";
+      stage.offsetHeight;
+      stage.style.display = "";
+      startedAt = Date.now();
+      pauseAt = 0;
+      paused = false;
+      playButton.textContent = "Pause";
+      animated.forEach((node) => { node.style.animationPlayState = "running"; });
+    });
+
+    updateSteps();
+  </script>
+</body>
+</html>
